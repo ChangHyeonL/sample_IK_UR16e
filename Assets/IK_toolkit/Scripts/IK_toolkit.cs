@@ -1,18 +1,18 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// IK_toolkit: UR16e ·Îº¿ ÆÈÀÇ ¿ª±â±¸ÇĞ ÅøÅ¶
+// IK_toolkit: UR16e ë¡œë´‡ íŒ”ì˜ ì—­ê¸°êµ¬í•™ íˆ´í‚·
 [ExecuteInEditMode]
 public class IK_toolkit : MonoBehaviour
 {
-    public Transform ik; // IK °è»êÀ» À§ÇÑ Transform
-    public int solutionID; // ¼±ÅÃµÈ ¼Ö·ç¼ÇÀÇ ID
-    [SerializeField]private List<string> IK_Solutions = new List<string>(); // °¡´ÉÇÑ IK ¼Ö·ç¼Ç ¸ñ·Ï
-    public List<double> goodSolution = new List<double>(); // À¯È¿ÇÑ ¼Ö·ç¼Ç ÀúÀå
-    public List<Transform> robot = new List<Transform>(); // ·Îº¿ °üÀı Transform ¸ñ·Ï
+    public Transform ik; // IK ê³„ì‚°ì„ ìœ„í•œ Transform
+    public int solutionID; // ì„ íƒëœ ì†”ë£¨ì…˜ì˜ ID
+    [SerializeField]private List<string> IK_Solutions = new List<string>(); // ê°€ëŠ¥í•œ IK ì†”ë£¨ì…˜ ëª©ë¡
+    public List<double> goodSolution = new List<double>(); // ìœ íš¨í•œ ì†”ë£¨ì…˜ ì €ì¥
+    public List<Transform> robot = new List<Transform>(); // ë¡œë´‡ ê´€ì ˆ Transform ëª©ë¡
 
-    // UR16e ·Îº¿ ÆÈÀÇ Denavit-Hartenberg ÆÄ¶ó¹ÌÅÍ Çà·Ä
+    // UR16e ë¡œë´‡ íŒ”ì˜ Denavit-Hartenberg íŒŒë¼ë¯¸í„° í–‰ë ¬
     public static double[,] DH_matrix_UR16e = new double[6, 3] {
         { 0, Mathf.PI / 2.0, 0.1807 },
         { -0.4784, 0, 0 },
@@ -22,79 +22,79 @@ public class IK_toolkit : MonoBehaviour
         { 0, 0, 0.11655}
     };
 
-    // ¸Å ÇÁ·¹ÀÓ¸¶´Ù È£ÃâµÇ´Â Update ¸Ş¼­µå
+    // ë§¤ í”„ë ˆì„ë§ˆë‹¤ í˜¸ì¶œë˜ëŠ” Update ë©”ì„œë“œ
     void Update()
     {
-        // IK¸¦ À§ÇÑ º¯È¯ Çà·Ä °è»ê
+        // IKë¥¼ ìœ„í•œ ë³€í™˜ í–‰ë ¬ ê³„ì‚°
         Matrix4x4 transform_matrix = GetTransformMatrix(ik);
 
-        // YÃàÀ» ±âÁØÀ¸·Î Çà·ÄÀ» ¹İ»ç
+        // Yì¶•ì„ ê¸°ì¤€ìœ¼ë¡œ í–‰ë ¬ì„ ë°˜ì‚¬
         Matrix4x4 mt = Matrix4x4.identity;
-        mt.m11 = -1; // YÃà ¹İ»ç Çà·Ä ¼³Á¤
-        Matrix4x4 mt_inverse = mt.inverse; // ¹İ»ç Çà·ÄÀÇ ¿ªÇà·Ä
-        Matrix4x4 result = mt * transform_matrix * mt_inverse; // ÃÖÁ¾ º¯È¯ Çà·Ä
+        mt.m11 = -1; // Yì¶• ë°˜ì‚¬ í–‰ë ¬ ì„¤ì •
+        Matrix4x4 mt_inverse = mt.inverse; // ë°˜ì‚¬ í–‰ë ¬ì˜ ì—­í–‰ë ¬
+        Matrix4x4 result = mt * transform_matrix * mt_inverse; // ìµœì¢… ë³€í™˜ í–‰ë ¬
 
-        // ¿ª±â±¸ÇĞ ¼Ö·ç¼Ç °è»ê
+        // ì—­ê¸°êµ¬í•™ ì†”ë£¨ì…˜ ê³„ì‚°
         double[,] solutions = Inverse_kinematic_solutions(result);
-        IK_Solutions.Clear(); // ±âÁ¸ ¼Ö·ç¼Ç ¸ñ·Ï ÃÊ±âÈ­
-        IK_Solutions = DisplaySolutions(solutions); // »õ·Î¿î ¼Ö·ç¼Ç ¸ñ·Ï Ç¥½Ã
+        IK_Solutions.Clear(); // ê¸°ì¡´ ì†”ë£¨ì…˜ ëª©ë¡ ì´ˆê¸°í™”
+        IK_Solutions = DisplaySolutions(solutions); // ìƒˆë¡œìš´ ì†”ë£¨ì…˜ ëª©ë¡ í‘œì‹œ
 
-        // ¼±ÅÃµÈ ¼Ö·ç¼Ç¿¡ µû¶ó ·Îº¿ ÆÈ °üÀı ¼³Á¤
+        // ì„ íƒëœ ì†”ë£¨ì…˜ì— ë”°ë¼ ë¡œë´‡ íŒ” ê´€ì ˆ ì„¤ì •
         ApplyJointSolution(IK_Solutions, solutions, solutionID, robot);
-        goodSolution.Clear(); // À¯È¿ÇÑ ¼Ö·ç¼Ç ÃÊ±âÈ­
-        // À¯È¿ÇÑ ¼Ö·ç¼ÇÀÇ °¢ °üÀı °¢µµ ÀúÀå
+        goodSolution.Clear(); // ìœ íš¨í•œ ì†”ë£¨ì…˜ ì´ˆê¸°í™”
+        // ìœ íš¨í•œ ì†”ë£¨ì…˜ì˜ ê° ê´€ì ˆ ê°ë„ ì €ì¥
         for (int i = 0; i < 6; i++) {
             goodSolution.Add(solutions[i, 5]);
         }
     }
 
-    // ÁÖ¾îÁø Transform¿¡ ´ëÇÑ º¯È¯ Çà·ÄÀ» ¾ò´Â ¸Ş¼­µå
+    // ì£¼ì–´ì§„ Transformì— ëŒ€í•œ ë³€í™˜ í–‰ë ¬ì„ ì–»ëŠ” ë©”ì„œë“œ
     public static Matrix4x4 GetTransformMatrix(Transform controller)
     {
-        // À§Ä¡ ¹× È¸ÀüÀ» ±â¹İÀ¸·Î º¯È¯ Çà·Ä »ı¼º
+        // ìœ„ì¹˜ ë° íšŒì „ì„ ê¸°ë°˜ìœ¼ë¡œ ë³€í™˜ í–‰ë ¬ ìƒì„±
         return Matrix4x4.TRS(new Vector3(controller.localPosition.x, controller.localPosition.y, controller.localPosition.z), 
                               Quaternion.Euler(controller.localEulerAngles.x, controller.localEulerAngles.y, controller.localEulerAngles.z), 
                               new Vector3(1, 1, 1));
     }
 
-    // Denavit-Hartenberg ÆÄ¶ó¹ÌÅÍ¸¦ »ç¿ëÇÏ¿© º¯È¯ Çà·Ä °è»ê
+    // Denavit-Hartenberg íŒŒë¼ë¯¸í„°ë¥¼ ì‚¬ìš©í•˜ì—¬ ë³€í™˜ í–‰ë ¬ ê³„ì‚°
     public static Matrix4x4 ComputeTransformMatrix(int jointIndex, double[,] jointAngles)
     {
         jointIndex--;
 
-        // ZÃà ÁÖÀ§ È¸Àü
+        // Zì¶• ì£¼ìœ„ íšŒì „
         var rotationZ = Matrix4x4.identity;
         rotationZ.m00 = Mathf.Cos((float)jointAngles[0, jointIndex]);
         rotationZ.m01 = -Mathf.Sin((float)jointAngles[0, jointIndex]);
         rotationZ.m10 = Mathf.Sin((float)jointAngles[0, jointIndex]);
         rotationZ.m11 = Mathf.Cos((float)jointAngles[0, jointIndex]);
 
-        // ZÃàÀ» µû¶ó ÀÌµ¿
+        // Zì¶•ì„ ë”°ë¼ ì´ë™
         var translationZ = Matrix4x4.identity;
         translationZ.m23 = (float)DH_matrix_UR16e[jointIndex, 2];
 
-        // XÃàÀ» µû¶ó ÀÌµ¿
+        // Xì¶•ì„ ë”°ë¼ ì´ë™
         var translationX = Matrix4x4.identity;
         translationX.m03 = (float)DH_matrix_UR16e[jointIndex, 0];
 
-        // XÃà ÁÖÀ§ È¸Àü
+        // Xì¶• ì£¼ìœ„ íšŒì „
         var rotationX = Matrix4x4.identity;
         rotationX.m11 = Mathf.Cos((float)DH_matrix_UR16e[jointIndex, 1]);
         rotationX.m12 = -Mathf.Sin((float)DH_matrix_UR16e[jointIndex, 1]);
         rotationX.m21 = Mathf.Sin((float)DH_matrix_UR16e[jointIndex, 1]);
         rotationX.m22 = Mathf.Cos((float)DH_matrix_UR16e[jointIndex, 1]);
 
-        // º¯È¯À» °áÇÕ: rotationZ, translationZ, translationX, rotationX
+        // ë³€í™˜ì„ ê²°í•©: rotationZ, translationZ, translationX, rotationX
         return rotationZ * translationZ * translationX * rotationX;
     }
 
-    // ¿ª±â±¸ÇĞ ¼Ö·ç¼ÇÀ» ·Îº¿ ÆÈ °üÀı¿¡ Àû¿ëÇÏ´Â ¸Ş¼­µå
+    // ì—­ê¸°êµ¬í•™ ì†”ë£¨ì…˜ì„ ë¡œë´‡ íŒ” ê´€ì ˆì— ì ìš©í•˜ëŠ” ë©”ì„œë“œ
     public static void ApplyJointSolution(List<string> solutionStatus, double[,] jointSolutions, int solutionIndex, List<Transform> robotJoints)
     {
-        // ¼Ö·ç¼ÇÀÌ À¯È¿ÇÑÁö È®ÀÎ
+        // ì†”ë£¨ì…˜ì´ ìœ íš¨í•œì§€ í™•ì¸
         if (solutionStatus[solutionIndex] != "NON DISPONIBLE")
         {
-            // ·Îº¿ÀÇ °¢ °üÀı¿¡ ´ëÇØ °¢µµ Àû¿ë
+            // ë¡œë´‡ì˜ ê° ê´€ì ˆì— ëŒ€í•´ ê°ë„ ì ìš©
             for (int i = 0; i < robotJoints.Count; i++)
             {
                 robotJoints[i].localEulerAngles = ConvertJointAngles(jointSolutions[i, solutionIndex], i);
@@ -102,17 +102,17 @@ public class IK_toolkit : MonoBehaviour
         }
         else
         {
-            // ¼Ö·ç¼ÇÀÌ ¾øÀ¸¸é ¿¡·¯ ¸Ş½ÃÁö Ãâ·Â
+            // ì†”ë£¨ì…˜ì´ ì—†ìœ¼ë©´ ì—ëŸ¬ ë©”ì‹œì§€ ì¶œë ¥
             Debug.LogError("NO SOLUTION");
         }
     }
 
-    // °üÀı °¢µµ¸¦ ¶óµğ¾È¿¡¼­ µµ·Î º¯È¯ÇÏ°í ¿ÀÇÁ¼ÂÀ» Àû¿ëÇÏ´Â ¸Ş¼­µå
+    // ê´€ì ˆ ê°ë„ë¥¼ ë¼ë””ì•ˆì—ì„œ ë„ë¡œ ë³€í™˜í•˜ê³  ì˜¤í”„ì…‹ì„ ì ìš©í•˜ëŠ” ë©”ì„œë“œ
     private static Vector3 ConvertJointAngles(double angleRad, int jointIndex)
     {
-        float angleDeg = -(float)(Mathf.Rad2Deg * angleRad); // ¶óµğ¾ÈÀ» µµ·Î º¯È¯
+        float angleDeg = -(float)(Mathf.Rad2Deg * angleRad); // ë¼ë””ì•ˆì„ ë„ë¡œ ë³€í™˜
 
-        // °¢ °üÀı¿¡ ´ëÇÑ ¿ÀÇÁ¼Â Àû¿ë
+        // ê° ê´€ì ˆì— ëŒ€í•œ ì˜¤í”„ì…‹ ì ìš©
         switch (jointIndex)
         {
             case 1:
@@ -125,12 +125,12 @@ public class IK_toolkit : MonoBehaviour
         }
     }
 
-    // ¿ª±â±¸ÇĞ ¼Ö·ç¼Ç °è»ê
+    // ì—­ê¸°êµ¬í•™ ì†”ë£¨ì…˜ ê³„ì‚°
     public static double[,] Inverse_kinematic_solutions(Matrix4x4 transform_matrix_unity)
     {
-        double[,] theta = new double[6, 8]; // ¼Ö·ç¼Ç °¢µµ ¹è¿­
+        double[,] theta = new double[6, 8]; // ì†”ë£¨ì…˜ ê°ë„ ë°°ì—´
 
-        // P05 À§Ä¡ °è»ê
+        // P05 ìœ„ì¹˜ ê³„ì‚°
         Vector4 P05 = transform_matrix_unity * new Vector4()
         {
             x = 0,
@@ -139,33 +139,33 @@ public class IK_toolkit : MonoBehaviour
             w = 1
         };
         
-        // °¢µµ °è»ê
+        // ê°ë„ ê³„ì‚°
         float psi = Mathf.Atan2(P05[1], P05[0]);
         float phi = Mathf.Acos((float)((DH_matrix_UR16e[1, 2] + DH_matrix_UR16e[3, 2] + DH_matrix_UR16e[2, 2]) / Mathf.Sqrt(Mathf.Pow(P05[0], 2) + Mathf.Pow(P05[1], 2))));
 
-        // Ã¹ ¹øÂ° °üÀı °¢µµ ¼³Á¤
+        // ì²« ë²ˆì§¸ ê´€ì ˆ ê°ë„ ì„¤ì •
         theta[0, 0] = psi + phi + Mathf.PI / 2;
-        // ³ª¸ÓÁö °¢µµµµ ºñ½ÁÇÑ ¹æ½ÄÀ¸·Î ¼³Á¤
+        // ë‚˜ë¨¸ì§€ ê°ë„ë„ ë¹„ìŠ·í•œ ë°©ì‹ìœ¼ë¡œ ì„¤ì •
         for (int i = 1; i <= 7; i++)
         {
-            theta[0, i] = psi - phi + Mathf.PI / 2; // ¹İº¹¹®À¸·Î Ã³¸®
+            theta[0, i] = psi - phi + Mathf.PI / 2; // ë°˜ë³µë¬¸ìœ¼ë¡œ ì²˜ë¦¬
         }
 
-        // °¢ °üÀıÀÇ À§Ä¡¸¦ ±â¹İÀ¸·Î Ãß°¡ °¢µµ °è»ê
+        // ê° ê´€ì ˆì˜ ìœ„ì¹˜ë¥¼ ê¸°ë°˜ìœ¼ë¡œ ì¶”ê°€ ê°ë„ ê³„ì‚°
         for (int i = 0; i < 8; i += 4)
         {
             double t5 = (transform_matrix_unity[0, 3] * Mathf.Sin((float)theta[0, i]) - transform_matrix_unity[1, 3] * Mathf.Cos((float)theta[0, i]) - (DH_matrix_UR16e[1, 2] + DH_matrix_UR16e[3, 2] + DH_matrix_UR16e[2, 2])) / DH_matrix_UR16e[5, 2];
             float th5;
             if (1 >= t5 && t5 >= -1)
             {
-                th5 = Mathf.Acos((float)t5); // À¯È¿ÇÑ °æ¿ì ¾ÆÅ©ÄÚ»çÀÎ °è»ê
+                th5 = Mathf.Acos((float)t5); // ìœ íš¨í•œ ê²½ìš° ì•„í¬ì½”ì‚¬ì¸ ê³„ì‚°
             }
             else
             {
-                th5 = 0; // À¯È¿ÇÏÁö ¾ÊÀ¸¸é 0À¸·Î ¼³Á¤
+                th5 = 0; // ìœ íš¨í•˜ì§€ ì•Šìœ¼ë©´ 0ìœ¼ë¡œ ì„¤ì •
             }
 
-            // °¢µµ ÀúÀå
+            // ê°ë„ ì €ì¥
             if (i == 0)
             {
                 theta[4, 0] = th5;
@@ -175,18 +175,18 @@ public class IK_toolkit : MonoBehaviour
                 }
             else
             {
-                // theta ¹è¿­ÀÇ Æ¯Á¤ ÀÎµ¦½º¿¡ th5 °ªÀ» ÇÒ´ç
-                theta[4, 4] = th5; // 4¹øÂ° ÀÎµ¦½º¿¡ th5 ÇÒ´ç
-                theta[4, 5] = th5; // 5¹øÂ° ÀÎµ¦½º¿¡ th5 ÇÒ´ç
-                theta[4, 6] = -th5; // 6¹øÂ° ÀÎµ¦½º¿¡ -th5 ÇÒ´ç
-                theta[4, 7] = -th5; // 7¹øÂ° ÀÎµ¦½º¿¡ -th5 ÇÒ´ç
+                // theta ë°°ì—´ì˜ íŠ¹ì • ì¸ë±ìŠ¤ì— th5 ê°’ì„ í• ë‹¹
+                theta[4, 4] = th5; // 4ë²ˆì§¸ ì¸ë±ìŠ¤ì— th5 í• ë‹¹
+                theta[4, 5] = th5; // 5ë²ˆì§¸ ì¸ë±ìŠ¤ì— th5 í• ë‹¹
+                theta[4, 6] = -th5; // 6ë²ˆì§¸ ì¸ë±ìŠ¤ì— -th5 í• ë‹¹
+                theta[4, 7] = -th5; // 7ë²ˆì§¸ ì¸ë±ìŠ¤ì— -th5 í• ë‹¹
             }
         }
 
-        // transform_matrix_unityÀÇ ¿ªÇà·ÄÀ» °è»ê
+        // transform_matrix_unityì˜ ì—­í–‰ë ¬ì„ ê³„ì‚°
         Matrix4x4 tmu_inverse = transform_matrix_unity.inverse;
 
-        // theta ¹è¿­ÀÇ °¢ ÀÎµ¦½º¿¡ ´ëÇØ ¾ÆÅ©ÅºÁ¨Æ®¸¦ °è»ê
+        // theta ë°°ì—´ì˜ ê° ì¸ë±ìŠ¤ì— ëŒ€í•´ ì•„í¬íƒ„ì  íŠ¸ë¥¼ ê³„ì‚°
         float th0 = Mathf.Atan2((-tmu_inverse[1, 0] * Mathf.Sin((float)theta[0, 0]) + tmu_inverse[1, 1] * Mathf.Cos((float)theta[0, 0])), 
                                 (tmu_inverse[0, 0] * Mathf.Sin((float)theta[0, 0]) - tmu_inverse[0, 1] * Mathf.Cos((float)theta[0, 0])));
         
@@ -199,7 +199,7 @@ public class IK_toolkit : MonoBehaviour
         float th6 = Mathf.Atan2((-tmu_inverse[1, 0] * Mathf.Sin((float)theta[0, 6]) + tmu_inverse[1, 1] * Mathf.Cos((float)theta[0, 6])), 
                                 (tmu_inverse[0, 0] * Mathf.Sin((float)theta[0, 6]) - tmu_inverse[0, 1] * Mathf.Cos((float)theta[0, 6])));
 
-        // theta ¹è¿­¿¡ ¾ÆÅ©ÅºÁ¨Æ® °á°ú¸¦ ÀúÀå
+        // theta ë°°ì—´ì— ì•„í¬íƒ„ì  íŠ¸ ê²°ê³¼ë¥¼ ì €ì¥
         theta[5, 0] = th0;
         theta[5, 1] = th0;
         theta[5, 2] = th2;
@@ -209,11 +209,11 @@ public class IK_toolkit : MonoBehaviour
         theta[5, 6] = th6;
         theta[5, 7] = th6;
 
-        // °¢ ¼Ö·ç¼Ç¿¡ ´ëÇØ ¹İº¹
+        // ê° ì†”ë£¨ì…˜ì— ëŒ€í•´ ë°˜ë³µ
         for (int i = 0; i <= 7; i += 2)
         {
             double[,] t1 = new double[1, 6];
-            // theta ¹è¿­ÀÇ °ªÀ» t1 ¹è¿­¿¡ ÀúÀå
+            // theta ë°°ì—´ì˜ ê°’ì„ t1 ë°°ì—´ì— ì €ì¥
             t1[0, 0] = theta[0, i];
             t1[0, 1] = theta[1, i];
             t1[0, 2] = theta[2, i];
@@ -221,44 +221,44 @@ public class IK_toolkit : MonoBehaviour
             t1[0, 4] = theta[4, i];
             t1[0, 5] = theta[5, i];
 
-            // º¯È¯ Çà·ÄÀ» °è»ê
+            // ë³€í™˜ í–‰ë ¬ì„ ê³„ì‚°
             Matrix4x4 T01 = ComputeTransformMatrix(1, t1);
             Matrix4x4 T45 = ComputeTransformMatrix(5, t1);
             Matrix4x4 T56 = ComputeTransformMatrix(6, t1);
             Matrix4x4 T14 = T01.inverse * transform_matrix_unity * (T45 * T56).inverse;
 
-            // P13 º¤ÅÍ °è»ê
+            // P13 ë²¡í„° ê³„ì‚°
             Vector4 P13 = T14 * new Vector4()
             {
                 x = 0,
-                y = (float)-DH_matrix_UR16e[3, 2], // DH ¸ÅÆ®¸¯½ºÀÇ Æ¯Á¤ °ª »ç¿ë
+                y = (float)-DH_matrix_UR16e[3, 2], // DH ë§¤íŠ¸ë¦­ìŠ¤ì˜ íŠ¹ì • ê°’ ì‚¬ìš©
                 z = 0,
                 w = 1
             };
 
-            // theta[2, i]¿¡ ´ëÇÑ th3 °è»ê
+            // theta[2, i]ì— ëŒ€í•œ th3 ê³„ì‚°
             double t3 = (Mathf.Pow(P13[0], 2) + Mathf.Pow(P13[1], 2) - Mathf.Pow((float)DH_matrix_UR16e[1, 0], 2) - 
                          Mathf.Pow((float)DH_matrix_UR16e[2, 0], 2)) / 
                          (2 * DH_matrix_UR16e[1, 0] * DH_matrix_UR16e[2, 0]);
             double th3;
-            // t3°¡ À¯È¿ ¹üÀ§ ³»¿¡ ÀÖÀ» °æ¿ì ¾ÆÅ©ÄÚ»çÀÎÀ» °è»ê
+            // t3ê°€ ìœ íš¨ ë²”ìœ„ ë‚´ì— ìˆì„ ê²½ìš° ì•„í¬ì½”ì‚¬ì¸ì„ ê³„ì‚°
             if (1 >= t3 && t3 >= -1)
             {
                 th3 = Mathf.Acos((float)t3);
             }
             else
             {
-                th3 = 0; // t3°¡ ¹üÀ§¸¦ ¹ş¾î³ª¸é 0À¸·Î ¼³Á¤
+                th3 = 0; // t3ê°€ ë²”ìœ„ë¥¼ ë²—ì–´ë‚˜ë©´ 0ìœ¼ë¡œ ì„¤ì •
             }
-            theta[2, i] = th3; // theta ¹è¿­¿¡ th3 ÀúÀå
-            theta[2, i + 1] = -th3; // ´ëÄª°ª ÀúÀå
+            theta[2, i] = th3; // theta ë°°ì—´ì— th3 ì €ì¥
+            theta[2, i + 1] = -th3; // ëŒ€ì¹­ê°’ ì €ì¥
         }
 
-        // ¸ğµç ¼Ö·ç¼Ç¿¡ ´ëÇØ ¹İº¹
+        // ëª¨ë“  ì†”ë£¨ì…˜ì— ëŒ€í•´ ë°˜ë³µ
         for (int i = 0; i < 8; i++)
         {
             double[,] t1 = new double[1, 6];
-            // theta ¹è¿­ÀÇ °ªÀ» t1 ¹è¿­¿¡ ÀúÀå
+            // theta ë°°ì—´ì˜ ê°’ì„ t1 ë°°ì—´ì— ì €ì¥
             t1[0, 0] = theta[0, i];
             t1[0, 1] = theta[1, i];
             t1[0, 2] = theta[2, i];
@@ -266,13 +266,13 @@ public class IK_toolkit : MonoBehaviour
             t1[0, 4] = theta[4, i];
             t1[0, 5] = theta[5, i];
 
-            // º¯È¯ Çà·ÄÀ» °è»ê
+            // ë³€í™˜ í–‰ë ¬ì„ ê³„ì‚°
             Matrix4x4 T01 = ComputeTransformMatrix(1, t1);
             Matrix4x4 T45 = ComputeTransformMatrix(5, t1);
             Matrix4x4 T56 = ComputeTransformMatrix(6, t1);
             Matrix4x4 T14 = T01.inverse * transform_matrix_unity * (T45 * T56).inverse;
 
-            // P13 º¤ÅÍ °è»ê
+            // P13 ë²¡í„° ê³„ì‚°
             Vector4 P13 = T14 * new Vector4()
             {
                 x = 0,
@@ -281,13 +281,13 @@ public class IK_toolkit : MonoBehaviour
                 w = 1
             };
 
-            // theta[1, i] °è»ê
+            // theta[1, i] ê³„ì‚°
             theta[1, i] = Mathf.Atan2(-P13[1], -P13[0]) - 
                            Mathf.Asin((float)(-DH_matrix_UR16e[2, 0] * Mathf.Sin((float)theta[2, i]) / 
                            Mathf.Sqrt(Mathf.Pow(P13[0], 2) + Mathf.Pow(P13[1], 2))));
 
             double[,] t2 = new double[1, 6];
-            // theta ¹è¿­ÀÇ °ªÀ» t2 ¹è¿­¿¡ ÀúÀå
+            // theta ë°°ì—´ì˜ ê°’ì„ t2 ë°°ì—´ì— ì €ì¥
             t2[0, 0] = theta[0, i];
             t2[0, 1] = theta[1, i];
             t2[0, 2] = theta[2, i];
@@ -295,63 +295,63 @@ public class IK_toolkit : MonoBehaviour
             t2[0, 4] = theta[4, i];
             t2[0, 5] = theta[5, i];
 
-            // º¯È¯ Çà·ÄÀ» °è»ê
+            // ë³€í™˜ í–‰ë ¬ì„ ê³„ì‚°
             Matrix4x4 T32 = ComputeTransformMatrix(3, t2).inverse;
             Matrix4x4 T21 = ComputeTransformMatrix(2, t2).inverse;
             Matrix4x4 T34 = T32 * T21 * T14;
 
-            // theta[3, i] °è»ê
+            // theta[3, i] ê³„ì‚°
             theta[3, i] = Mathf.Atan2(T34[1, 0], T34[0, 0]);
         }
 
-        return theta; // ÃÖÁ¾ theta ¹è¿­ ¹İÈ¯
+        return theta; // ìµœì¢… theta ë°°ì—´ ë°˜í™˜
     }
 
-    // ¼Ö·ç¼ÇÀ» Ç¥½ÃÇÏ±â À§ÇÑ ¸Ş¼­µå
+    // ì†”ë£¨ì…˜ì„ í‘œì‹œí•˜ê¸° ìœ„í•œ ë©”ì„œë“œ
     public static List<string> DisplaySolutions(double[,] solutions)
     {
         List<string> info = new List<string>();
 
-        // 8°³ÀÇ °¡´ÉÇÑ ¼Ö·ç¼ÇÀ» ¹İº¹
+        // 8ê°œì˜ ê°€ëŠ¥í•œ ì†”ë£¨ì…˜ì„ ë°˜ë³µ
         for (int column = 0; column < 8; column++)
         {
-            // ¸ğµç Á¶ÀÎÆ® °¢µµ°¡ À¯È¿ÇÑÁö È®ÀÎ
+            // ëª¨ë“  ì¡°ì¸íŠ¸ ê°ë„ê°€ ìœ íš¨í•œì§€ í™•ì¸
             bool isValidSolution = true;
 			for (int row = 0; row < 6; row++)
 			{
-				// °¢ ¼Ö·ç¼ÇÀÇ Çà(row)¿¡ ´ëÇØ NaN ¿©ºÎ È®ÀÎ
+				// ê° ì†”ë£¨ì…˜ì˜ í–‰(row)ì— ëŒ€í•´ NaN ì—¬ë¶€ í™•ì¸
 				if (double.IsNaN(solutions[row, column]))
 				{
-				    isValidSolution = false; // NaNÀÌ ¹ß°ßµÇ¸é À¯È¿ÇÏÁö ¾ÊÀº ¼Ö·ç¼ÇÀ¸·Î ¼³Á¤
-				    break; // ¹İº¹¹® Á¾·á
+				    isValidSolution = false; // NaNì´ ë°œê²¬ë˜ë©´ ìœ íš¨í•˜ì§€ ì•Šì€ ì†”ë£¨ì…˜ìœ¼ë¡œ ì„¤ì •
+				    break; // ë°˜ë³µë¬¸ ì¢…ë£Œ
 				}
 			}
 				
-			// ¼Ö·ç¼ÇÀÌ À¯È¿ÇÑ °æ¿ì, °üÀı °¢µµ¸¦ Æ÷¸ËÇÏ¿© info ¸®½ºÆ®¿¡ Ãß°¡
+			// ì†”ë£¨ì…˜ì´ ìœ íš¨í•œ ê²½ìš°, ê´€ì ˆ ê°ë„ë¥¼ í¬ë§·í•˜ì—¬ info ë¦¬ìŠ¤íŠ¸ì— ì¶”ê°€
 			if (isValidSolution)
 			{
-				string solutionInfo = ""; // ¼Ö·ç¼Ç Á¤º¸¸¦ ÀúÀåÇÒ ¹®ÀÚ¿­ ÃÊ±âÈ­
+				string solutionInfo = ""; // ì†”ë£¨ì…˜ ì •ë³´ë¥¼ ì €ì¥í•  ë¬¸ìì—´ ì´ˆê¸°í™”
 				for (int row = 0; row < 6; row++)
 				{
-				    // ¶óµğ¾È °ªÀ» µµ(degree) ´ÜÀ§·Î º¯È¯ÇÏ°í ¼Ò¼öÁ¡ µÑÂ° ÀÚ¸®±îÁö ¹İ¿Ã¸²
+				    // ë¼ë””ì•ˆ ê°’ì„ ë„(degree) ë‹¨ìœ„ë¡œ ë³€í™˜í•˜ê³  ì†Œìˆ˜ì  ë‘˜ì§¸ ìë¦¬ê¹Œì§€ ë°˜ì˜¬ë¦¼
 				    double angleInDegrees = Math.Round(Mathf.Rad2Deg * solutions[row, column], 2);
-				    solutionInfo += $"{angleInDegrees}"; // °¢µµ¸¦ ¹®ÀÚ¿­¿¡ Ãß°¡
+				    solutionInfo += $"{angleInDegrees}"; // ê°ë„ë¥¼ ë¬¸ìì—´ì— ì¶”ê°€
 				
-				    // ¸¶Áö¸· ÇàÀÌ ¾Æ´Ò °æ¿ì ±¸ºĞÀÚ Ãß°¡
+				    // ë§ˆì§€ë§‰ í–‰ì´ ì•„ë‹ ê²½ìš° êµ¬ë¶„ì ì¶”ê°€
 				    if (row < 5)
 				    {
 				        solutionInfo += " | ";
 				    }
 				}
-				info.Add(solutionInfo); // ¿Ï¼ºµÈ ¼Ö·ç¼Ç Á¤º¸¸¦ info ¸®½ºÆ®¿¡ Ãß°¡
+				info.Add(solutionInfo); // ì™„ì„±ëœ ì†”ë£¨ì…˜ ì •ë³´ë¥¼ info ë¦¬ìŠ¤íŠ¸ì— ì¶”ê°€
 			}
-			// ¼Ö·ç¼ÇÀÌ À¯È¿ÇÏÁö ¾ÊÀº °æ¿ì "NON DISPONIBLE"À» info ¸®½ºÆ®¿¡ Ãß°¡
+			// ì†”ë£¨ì…˜ì´ ìœ íš¨í•˜ì§€ ì•Šì€ ê²½ìš° "NON DISPONIBLE"ì„ info ë¦¬ìŠ¤íŠ¸ì— ì¶”ê°€
 			else
 			{
-				info.Add("NON DISPONIBLE"); // À¯È¿ÇÏÁö ¾ÊÀº ¼Ö·ç¼Ç¿¡ ´ëÇÑ ¸Ş½ÃÁö Ãß°¡
+				info.Add("NON DISPONIBLE"); // ìœ íš¨í•˜ì§€ ì•Šì€ ì†”ë£¨ì…˜ì— ëŒ€í•œ ë©”ì‹œì§€ ì¶”ê°€
 			}
 		}
 				
-		return info; // info ¸®½ºÆ® ¹İÈ¯
+		return info; // info ë¦¬ìŠ¤íŠ¸ ë°˜í™˜
 	}
 }
