@@ -33,6 +33,7 @@ public class AutomationController : MonoBehaviour
             // 가공 대기
             yield return new WaitForSeconds(5);
 
+            // 그리퍼 작동
 
             yield return MoveRobotTo(targetHome, 2);
         }
@@ -42,6 +43,7 @@ public class AutomationController : MonoBehaviour
     private IEnumerator MoveRobotTo(Transform target, int time)
     {
         Vector3 startPos = ikToolkit.ik.position;
+        Quaternion startRot = ikToolkit.ik.rotation;
 
         elapsedTime = 0;
 
@@ -51,6 +53,9 @@ public class AutomationController : MonoBehaviour
 
             // end-effector를 target위치로 Lerp를 사용해 time동안 이동
             ikToolkit.ik.position = Vector3.Lerp(startPos, target.position, elapsedTime / time);
+
+            // end-effector를 target위치로 Slerp를 사용해 time동안 회전
+            ikToolkit.ik.rotation = Quaternion.Slerp(startRot, target.rotation, elapsedTime / time);
 
             yield return new WaitForEndOfFrame();
         }
