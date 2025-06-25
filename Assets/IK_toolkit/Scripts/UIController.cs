@@ -17,29 +17,44 @@ public class UIController : MonoBehaviour
     }
 
     public IK_toolkit ikToolkit;
+    
     public TMP_InputField xInput;
     public TMP_InputField yInput;
     public TMP_InputField zInput;
-    public bool isXPlusBtnClicking;
-    public bool isXMinusBtnClicking;
-    public bool isYPlusBtnClicking;
-    public bool isYMinusBtnClicking;
-    public bool isZPlusBtnClicking;
-    public bool isZMinusBtnClicking;
-    public float x, y, z;
-    public float multiplier = 0.01f;
-    public float reach = 2;
-    public List<TeachData> teachDatas = new List<TeachData>();
-    public int stepCnt;
-    public string teachDataPath;
     public TMP_InputField durationInput;
     public Toggle gripperToggle;
+    public string teachDataPath;
+    public float multiplier = 0.01f;
+    public float rotMultiplier = 0.1f;
+    public float reach = 2;
+    public List<TeachData> teachDatas = new List<TeachData>();
+
+    bool isXPlusBtnClicking;
+    bool isXMinusBtnClicking;
+    bool isYPlusBtnClicking;
+    bool isYMinusBtnClicking;
+    bool isZPlusBtnClicking;
+    bool isZMinusBtnClicking;
+    float x, y, z;
+    float xRot, yRot, zRot;
+    int stepCnt;
+    Vector3 currentPos;
+    private bool isXRotPlusClicking;
+    private bool isXRotMinusClicking;
+    private bool isYRotPlusClicking;
+    private bool isYRotMinusClicking;
+    private bool isZRotPlusClicking;
+    private bool isZRotMinusClicking;
 
     private void Start()
     {
         x = ikToolkit.ik.position.x;
         y = ikToolkit.ik.position.y;
         z = ikToolkit.ik.position.z;
+
+        xRot = ikToolkit.ik.rotation.eulerAngles.x;
+        yRot = ikToolkit.ik.rotation.eulerAngles.y;
+        zRot = ikToolkit.ik.rotation.eulerAngles.z;
 
         teachDataPath = Application.persistentDataPath + "/teachingData.txt";
 
@@ -62,18 +77,18 @@ public class UIController : MonoBehaviour
                 using(StreamReader sr = new StreamReader(fs))
                 {
                     string line = "";
-                    while ((line = sr.ReadLine()) != string.Empty)
+                    while ((line = sr.ReadLine()) != null)
                     {
-                        TeachData data = new TeachData();
-
                         try
                         {
+                            TeachData data = new TeachData();
+
                             // 0,(-0.41, 0.71, 1.08),0.5,True
                             char stepNum = line[0];                     // 0
                             int indexOpenBraket = line.IndexOf('(');    // 2
-                            int indexCloseBraket = line.IndexOf(')');   // 11
+                            int indexCloseBraket = line.IndexOf(')');   // 20
                             // -0.41, 0.71, 1.08
-                            string position = line.Substring(indexOpenBraket + 1, indexCloseBraket - indexOpenBraket - 2);
+                            string position = line.Substring(indexOpenBraket + 1, indexCloseBraket - indexOpenBraket - 1);
                             string leftOver = line.Remove(0, indexCloseBraket + 2);  // 0.5,True
                             string[] leftOvers = leftOver.Split(',');
                             string duration = leftOvers[0];              // 0.5
@@ -110,6 +125,15 @@ public class UIController : MonoBehaviour
         if (!isMovable)
             return;
 
+        UpdatePosValues();
+
+        UpdateRotValues();
+
+        UpdateEndEffector(); // position, rotation updata
+    }
+
+    private void UpdatePosValues()
+    {
         if (isXPlusBtnClicking)
         {
             x += multiplier;
@@ -139,8 +163,39 @@ public class UIController : MonoBehaviour
         {
             z -= multiplier;
         }
+    }
 
-        UpdateEndEffector();
+    private void UpdateRotValues()
+    {
+        if (isXRotPlusClicking)
+        {
+            xRot += rotMultiplier;
+        }
+
+        if (isXRotMinusClicking)
+        {
+            xRot -= rotMultiplier;
+        }
+
+        if (isYRotPlusClicking)
+        {
+            yRot += rotMultiplier;
+        }
+
+        if (isYRotMinusClicking)
+        {
+            yRot -= rotMultiplier;
+        }
+
+        if (isZRotPlusClicking)
+        {
+            zRot += rotMultiplier;
+        }
+
+        if (isZRotMinusClicking)
+        {
+            zRot -= rotMultiplier;
+        }
     }
 
     private void UpdateEndEffector()
@@ -153,9 +208,9 @@ public class UIController : MonoBehaviour
         // 특정 거리 이상이 되면 아래 코드 실행 X
 
         ikToolkit.ik.position = new Vector3(x, y, z);
+        ikToolkit.ik.rotation = Quaternion.Euler(xRot, yRot, zRot);
     }
 
-    Vector3 currentPos;
     private bool CanMove()
     {
         Vector3 dir = ikToolkit.ik.position - ikToolkit.robot[0].position;
@@ -191,6 +246,16 @@ public class UIController : MonoBehaviour
     public void OnStartBtnClkEvent()
     {
         AutomationController.instance.StartSequence(teachDatas);
+    }
+
+    public void OnCycleBtnClkEvent()
+    {
+
+    }
+
+    public void OnStopBtnClkEvent()
+    {
+
     }
 
     public void OnTeachBtnClkEvent()
@@ -303,5 +368,49 @@ public class UIController : MonoBehaviour
     public void OnZMinusBtnUpEvent()
     {
         isZMinusBtnClicking = false;
+    }
+    // xRot
+    public void OnXRotPlusBtnDownEvent()
+    {
+        isXRotPlusClicking = true;
+    }
+    public void OnXRotPlusBtnUpEvent()
+    {
+        isXRotPlusClicking = false;
+    }
+    public void OnXRotMinusBtnDownEvent()
+    {
+        isXRotMinusClicking = true;
+    }
+    public void OnXRotMinusBtnUpEvent()
+    {
+        isXRotMinusClicking = false;
+    }
+    // yRot
+    public void OnYRotPlusBtnDownEvent()
+    {
+        isYRotPlusClicking = true;
+    }
+    public void OnYRotPlusBtnUpEvent()
+    {
+        isYRotPlusClicking = false;
+    }
+    public void OnYRotMinusBtnDownEvent()
+    {
+        isYRotMinusClicking = true;
+    }
+    public void OnYRotMinusBtnUpEvent()
+    {
+        isYRotMinusClicking = false;
+    }
+    // zRot
+    public void OnZRotPlusBtnEvent(bool click)
+    {
+        //click = !click;
+        isZRotPlusClicking = click;
+    }
+    public void OnZRotMinusBtnEvent(bool click)
+    {
+        isZRotMinusClicking = click;
     }
 }
