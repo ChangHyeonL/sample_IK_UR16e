@@ -1,14 +1,12 @@
-using NUnit.Framework;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIController : MonoBehaviour
 {
-    class TeachData
+    public class TeachData
     {
         public int stepNum;
         public Vector3 pos;
@@ -42,6 +40,9 @@ public class UIController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (AutomationController.instance.isRobotRunning)
+            return;
+
         bool isMovable = CanMove();
 
         if (!isMovable)
@@ -121,16 +122,31 @@ public class UIController : MonoBehaviour
 
     List<TeachData> teachDatas = new List<TeachData>();
     public int stepCnt;
-    public float duration;
-    public bool isGripperOn;
     public string teachDataPath;
+    public TMP_InputField durationInput;
+    public Toggle gripperToggle;
+
+    // 시작버튼을 누르면 AutomationController의 시퀀스 시작
+    // 특정 Vector3로 duration 동안 이동, 회전
+    // 1. MoveRobotTo를 Vector3 전용으로 오버로드
+    // 2. AutomationController의 StartRobot 함수 시작
+    // 2-1. StartRobot 함수 안의 Coroutine 시작!
+    //    -> 시퀀스 1번 시작
+    public void OnStartBtnClkEvent()
+    {
+        AutomationController.instance.StartSequence(teachDatas);
+    }
 
     public void OnTeachBtnClkEvent()
     {
         TeachData teachData = new TeachData();
         teachData.stepNum = stepCnt++;
-        teachData.duration = duration;
-        teachData.isGripperOn = isGripperOn;
+
+        bool isFloat = float.TryParse(durationInput.text, out teachData.duration);
+        if (!isFloat)
+            teachData.duration = 0;
+
+        teachData.isGripperOn = gripperToggle.isOn;
         teachData.pos = ikToolkit.ik.position;
 
         teachDatas.Add(teachData);
@@ -151,6 +167,33 @@ public class UIController : MonoBehaviour
                     Debug.Log($"데이터 추가: {data}");
                 }
             }
+        }
+        else
+        {
+            using (FileStream fs = new FileStream(teachDataPath, FileMode.OpenOrCreate))
+            {
+                using (StreamWriter sw = new StreamWriter(fs))
+                {
+                    string data = $"{teachData.stepNum},{teachData.pos},{teachData.duration},{teachData.isGripperOn}";
+                    sw.WriteLine(data);
+                    Debug.Log($"데이터 추가: {data}");
+                }
+            }
+        }
+    }
+
+    public void OnDeleteBtnClkEvent()
+    {
+        // 1. TeachData 리스트 초기화
+        stepCnt = 0;
+        teachDatas.Clear();
+
+        // 2. Txt 파일 내용 지우기
+        if(File.Exists(teachDataPath))
+        {
+            File.WriteAllText(teachDataPath, string.Empty);
+
+            Debug.Log("Data를 모두 지웠습니다.");
         }
     }
 
