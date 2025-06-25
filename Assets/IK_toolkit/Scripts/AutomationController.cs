@@ -35,6 +35,12 @@ public class AutomationController : MonoBehaviour
         StartCoroutine(Sequence(datas));
     }
 
+    public void CycleSequence(List<UIController.TeachData> datas)
+    {
+
+    }
+
+
     IEnumerator Sequence(List<UIController.TeachData> datas)
     {
         isRobotRunning = true;

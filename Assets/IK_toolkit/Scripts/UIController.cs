@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using TMPro;
@@ -6,6 +7,7 @@ using UnityEngine.UI;
 
 public class UIController : MonoBehaviour
 {
+    [Serializable]
     public class TeachData
     {
         public int stepNum;
@@ -27,6 +29,11 @@ public class UIController : MonoBehaviour
     public float x, y, z;
     public float multiplier = 0.01f;
     public float reach = 2;
+    public List<TeachData> teachDatas = new List<TeachData>();
+    public int stepCnt;
+    public string teachDataPath;
+    public TMP_InputField durationInput;
+    public Toggle gripperToggle;
 
     private void Start()
     {
@@ -35,6 +42,61 @@ public class UIController : MonoBehaviour
         z = ikToolkit.ik.position.z;
 
         teachDataPath = Application.persistentDataPath + "/teachingData.txt";
+
+        durationInput.text = "2";
+
+        InitializeData();
+    }
+
+    // teachData.txt에서 데이터 읽어온 후, teachDatas List에 넣기
+    private void InitializeData()
+    {
+        if(!File.Exists(teachDataPath))
+        {
+            File.Create(teachDataPath);
+        }
+        else
+        {
+            using(FileStream fs = new FileStream(teachDataPath, FileMode.Open))
+            {
+                using(StreamReader sr = new StreamReader(fs))
+                {
+                    string line = "";
+                    while ((line = sr.ReadLine()) != string.Empty)
+                    {
+                        TeachData data = new TeachData();
+
+                        try
+                        {
+                            // 0,(-0.41, 0.71, 1.08),0.5,True
+                            char stepNum = line[0];                     // 0
+                            int indexOpenBraket = line.IndexOf('(');    // 2
+                            int indexCloseBraket = line.IndexOf(')');   // 11
+                            // -0.41, 0.71, 1.08
+                            string position = line.Substring(indexOpenBraket + 1, indexCloseBraket - indexOpenBraket - 2);
+                            string leftOver = line.Remove(0, indexCloseBraket + 2);  // 0.5,True
+                            string[] leftOvers = leftOver.Split(',');
+                            string duration = leftOvers[0];              // 0.5
+                            string isGripperOn = leftOvers[1];           // True
+
+                            data.stepNum = Convert.ToInt32(stepNum) - '0';
+                            string[] pos = position.Split(',');
+                            data.pos = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
+                            data.duration = float.Parse(duration);
+                            data.isGripperOn = Convert.ToBoolean(isGripperOn);
+
+                            teachDatas.Add(data);
+                        }
+                        catch(Exception e)
+                        {
+                            Debug.LogWarning("올바른 데이터가 아닙니다. 데이터를 확인 후 다시 시도해 주세요.");
+
+                            return;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // Update is called once per frame
@@ -119,12 +181,6 @@ public class UIController : MonoBehaviour
     // step1,3,5,6,3.5,true
     // step2,3,5,6,3.5,true
     // step3,3,5,6,3.5,true
-
-    List<TeachData> teachDatas = new List<TeachData>();
-    public int stepCnt;
-    public string teachDataPath;
-    public TMP_InputField durationInput;
-    public Toggle gripperToggle;
 
     // 시작버튼을 누르면 AutomationController의 시퀀스 시작
     // 특정 Vector3로 duration 동안 이동, 회전
