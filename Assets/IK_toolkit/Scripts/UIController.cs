@@ -11,7 +11,8 @@ public class UIController : MonoBehaviour
     public class TeachData
     {
         public int stepNum;
-        public Vector3 pos;
+        public Vector3 pos; // 위치정보
+        public Vector3 rot; // 각도정보
         public float duration;
         public bool isGripperOn;
     }
@@ -83,20 +84,30 @@ public class UIController : MonoBehaviour
                         {
                             TeachData data = new TeachData();
 
-                            // 0,(-0.41, 0.71, 1.08),0.5,True
-                            char stepNum = line[0];                     // 0
+                            // 0,(-0.41, 0.71, 1.08),(1, 3, 5),0.5,True
+                            char stepNum = line[0];
+
+                            // Position Parsing -> -0.41, 0.71, 1.08
                             int indexOpenBraket = line.IndexOf('(');    // 2
                             int indexCloseBraket = line.IndexOf(')');   // 20
                             // -0.41, 0.71, 1.08
                             string position = line.Substring(indexOpenBraket + 1, indexCloseBraket - indexOpenBraket - 1);
-                            string leftOver = line.Remove(0, indexCloseBraket + 2);  // 0.5,True
+
+                            // Rotation Parsing -> 1, 3, 5
+                            int indexOpenBraket2 = line.IndexOf('(', line.IndexOf('(') + 1);
+                            int indexCloseBraket2 = line.IndexOf(')', line.IndexOf(')') + 1);
+                            string rotation = line.Substring(indexOpenBraket2 + 1, indexCloseBraket2 - indexOpenBraket2 - 1);
+
+                            string leftOver = line.Remove(0, indexCloseBraket2 + 2);  // 0.5,True
                             string[] leftOvers = leftOver.Split(',');
                             string duration = leftOvers[0];              // 0.5
                             string isGripperOn = leftOvers[1];           // True
 
                             data.stepNum = Convert.ToInt32(stepNum) - '0';
                             string[] pos = position.Split(',');
+                            string[] rot = rotation.Split(',');
                             data.pos = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
+                            data.rot = new Vector3(float.Parse(rot[0]), float.Parse(rot[1]), float.Parse(rot[2]));
                             data.duration = float.Parse(duration);
                             data.isGripperOn = Convert.ToBoolean(isGripperOn);
 
@@ -269,6 +280,7 @@ public class UIController : MonoBehaviour
 
         teachData.isGripperOn = gripperToggle.isOn;
         teachData.pos = ikToolkit.ik.position;
+        teachData.rot = ikToolkit.ik.eulerAngles;
 
         teachDatas.Add(teachData);
 
@@ -283,7 +295,7 @@ public class UIController : MonoBehaviour
             {
                 using(StreamWriter sw = new StreamWriter(fs))
                 {
-                    string data = $"{teachData.stepNum},{teachData.pos},{teachData.duration},{teachData.isGripperOn}";
+                    string data = $"{teachData.stepNum},{teachData.pos},{teachData.rot},{teachData.duration},{teachData.isGripperOn}";
                     sw.WriteLine(data);
                     Debug.Log($"데이터 추가: {data}");
                 }
