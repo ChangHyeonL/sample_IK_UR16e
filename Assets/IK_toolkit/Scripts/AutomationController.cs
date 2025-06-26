@@ -47,7 +47,7 @@ public class AutomationController : MonoBehaviour
 
         foreach (var data in datas)
         {
-            yield return MoveRobotTo(data.pos, data.duration);
+            yield return MoveRobotTo(data.pos, data.rot, data.duration);
         }
 
         isRobotRunning = false;
@@ -96,10 +96,11 @@ public class AutomationController : MonoBehaviour
     }
 
     // 함수의 오버로드
-    private IEnumerator MoveRobotTo(Vector3 pos, float time)
+    private IEnumerator MoveRobotTo(Vector3 pos, Vector3 rot, float time)
     {
         Vector3 startPos = ikToolkit.ik.position;
         Quaternion startRot = ikToolkit.ik.rotation;
+        Quaternion endRot = Quaternion.Euler(rot.x, rot.y, rot.z);
 
         elapsedTime = 0;
 
@@ -111,7 +112,7 @@ public class AutomationController : MonoBehaviour
             ikToolkit.ik.position = Vector3.Lerp(startPos, pos, elapsedTime / time);
 
             // end-effector를 target위치로 Slerp를 사용해 time동안 회전
-            //ikToolkit.ik.rotation = Quaternion.Slerp(startRot, target.rotation, elapsedTime / time);
+            ikToolkit.ik.rotation = Quaternion.Slerp(startRot, endRot, elapsedTime / time);
 
             yield return new WaitForEndOfFrame();
         }
